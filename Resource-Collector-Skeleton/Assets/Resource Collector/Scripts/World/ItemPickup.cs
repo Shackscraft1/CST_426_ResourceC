@@ -25,7 +25,7 @@ public class ItemPickup : Interactable
     public override bool CanInteract(ObjectType heldType)
     {
         // TODO Slice 5.3: a spawned pickup is valid to collect. </> end of Slice 5
-        return false;
+        return true;
     }
 
     protected override void Interact(PlayerHeldItem heldItem)

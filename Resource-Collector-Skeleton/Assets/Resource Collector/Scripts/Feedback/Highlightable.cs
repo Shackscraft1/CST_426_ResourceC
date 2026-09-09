@@ -27,5 +27,5 @@ public class Highlightable : MonoBehaviour
             renderer.material.SetFloat("_HIghlight_Enabled", isHighlighted ? 1f : 0f);
         }
     }
-    
+        
 }
