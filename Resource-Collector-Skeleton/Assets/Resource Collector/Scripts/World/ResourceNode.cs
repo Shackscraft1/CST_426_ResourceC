@@ -66,13 +66,18 @@ public class ResourceNode : Interactable
         _health.Value -= 1;
         HitFeedbackRpc();
         //add for to these lines in cases you want to spawn 3 for each interaction
-        //for (int i = 0; i < _amountToSpawn; i++)
-        //{
-        Vector2 offset = UnityEngine.Random.insideUnitCircle * 2f;
-        Vector3 spawnPosition = transform.position + new Vector3(offset.x, 0f, offset.y);
-        NetworkObject.InstantiateAndSpawn(_producedPrefab.gameObject, NetworkManager,
-            position: spawnPosition);
-        //}
+        if (_health.Value <= 0)
+        {
+            for (int i = 0; i < _amountToSpawn; i++)
+            {
+                Vector2 offset = UnityEngine.Random.insideUnitCircle * 2f;
+                Vector3 spawnPosition = transform.position + new Vector3(offset.x, 0f, offset.y);
+                NetworkObject.InstantiateAndSpawn(_producedPrefab.gameObject, NetworkManager,
+                    position: spawnPosition);
+            }
+        }
+
+        
         
 
 
