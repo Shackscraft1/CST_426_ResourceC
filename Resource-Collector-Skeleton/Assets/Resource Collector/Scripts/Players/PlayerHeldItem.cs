@@ -86,8 +86,11 @@ public class PlayerHeldItem : NetworkBehaviour
         
         if(_heldObjectType.Value == ObjectType.None) return;
         ItemCatalogEntry matchingEntry = _itemCatalog.Find((item) => item.type == _heldObjectType.Value);
+        Quaternion rotation = Quaternion.Euler(matchingEntry.prefab.transform.eulerAngles.x,
+            UnityEngine.Random.Range(0f, 360f), matchingEntry.prefab.transform.eulerAngles.z);
+
         NetworkObject.InstantiateAndSpawn(matchingEntry.prefab.gameObject, 
-            NetworkManager, position: position, rotation: transform.rotation * Quaternion.Euler(90f, 0f, 55f));
+            NetworkManager, position: position, rotation: rotation);
         
         Clear();
     }

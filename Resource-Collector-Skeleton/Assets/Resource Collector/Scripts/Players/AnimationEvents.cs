@@ -15,7 +15,10 @@ public class AnimationEvents : MonoBehaviour
 
     public void AnimationDone() { }
 
-    public void Interact() { }
+    public void Interact()
+    {
+        GetComponentInParent<PlayerController>().RequestInteraction();
+    }
 
     public void Step()
     {

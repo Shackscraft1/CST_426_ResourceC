@@ -53,7 +53,7 @@ public class PlayerController : NetworkBehaviour
         // 2. Call HandleInteractionPressed.
         // Check: Play Mode, Host, highlight the axe, press E.
         // The Interact clip plays. The axe still stays on the ground.
-        if (Keyboard.current.eKey.wasPressedThisFrame || Mouse.current.leftButton.wasPressedThisFrame)
+        if (InputSystem.actions.FindAction("Player/Interact").WasPressedThisFrame())
             HandleInteractionPressed();
     }
 
@@ -88,19 +88,12 @@ public class PlayerController : NetworkBehaviour
         // 3. Send the target's NetworkObjectId to the server.
         if (_closestTarget == null) return;
         _animator.SetTrigger("Interact");
-        RequestInteractRpc(_closestTarget.NetworkObjectId);
     }
 
     static Vector2 ReadMovementInput()
     {
         // PROVIDED Slice 2.1: return WASD input as a two-dimensional vector.
-        Vector2 movementInput = Vector2.zero;
-        movementInput.x += Keyboard.current.aKey.isPressed ? -1f : 0f;
-        movementInput.x += Keyboard.current.dKey.isPressed ? 1f : 0f;
-        movementInput.y += Keyboard.current.wKey.isPressed ? 1f : 0f;
-        movementInput.y += Keyboard.current.sKey.isPressed ? -1f : 0f;
-
-        return movementInput;
+        return InputSystem.actions.FindAction("Player/Move").ReadValue<Vector2>();
     }
 
     void UpdateInteractionTarget()
@@ -141,6 +134,14 @@ public class PlayerController : NetworkBehaviour
         }
 
         return candidate;
+    }
+
+    public void RequestInteraction()
+    {
+        if (!IsOwner) return;
+        if (_closestTarget == null) return;
+
+        RequestInteractRpc(_closestTarget.NetworkObjectId);
     }
 
     void ClearSelection()

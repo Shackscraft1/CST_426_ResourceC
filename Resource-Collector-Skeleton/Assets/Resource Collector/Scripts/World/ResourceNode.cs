@@ -25,16 +25,14 @@ public class ResourceNode : Interactable
         // TODO Slice 8.1: on the server, set health to _startingHealth.
         // NOTE: make sure  NetworkObject.Despawn(!NetworkObject.InScenePlaced); is done
         // Next: Slice 8.2 CanInteract.
-        
-        
-        
-        if(!IsServer) return;
-        _health.Value = _startingHealth;
+        if (IsServer)
+            _health.Value = _startingHealth;
 
-        
         // TODO Slice 8.5: subscribe to health changes and apply the current health.
         // Check: both windows hide a depleted tree. A late joiner sees it hidden.
         // Next: Slice 8.6 OnNetworkDespawn.
+        _health.OnValueChanged += HandleHealthChanged;
+        HandleHealthChanged(_health.Value, _health.Value);
     }
 
     public override void OnNetworkDespawn()
@@ -42,6 +40,7 @@ public class ResourceNode : Interactable
         // TODO Slice 8.6: unsubscribe from replicated health changes.
         // </> end of Slice 8
         // Next: Slice 9.1 in World/Receptacle.cs.
+        _health.OnValueChanged -= HandleHealthChanged;
         base.OnNetworkDespawn();
     }
 
@@ -52,10 +51,7 @@ public class ResourceNode : Interactable
         // 2. Require an accepted tool.
         // Check: hold the axe. The tree highlights. Empty-handed, it does not.
         // Next: Slice 8.3 Interact and HitFeedbackRpc.
-        
-        if (_health.Value > 0 && heldType == _toolTypeRequired[0]) return true;
-        
-        return false;
+        return _health.Value > 0 && _toolTypeRequired.Contains(heldType);
     }
 
     protected override void Interact(PlayerHeldItem heldItem)
@@ -74,10 +70,8 @@ public class ResourceNode : Interactable
         //{
         Vector2 offset = UnityEngine.Random.insideUnitCircle * 2f;
         Vector3 spawnPosition = transform.position + new Vector3(offset.x, 0f, offset.y);
-        Quaternion spawnRotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
-
         NetworkObject.InstantiateAndSpawn(_producedPrefab.gameObject, NetworkManager,
-            position: spawnPosition, rotation: spawnRotation);
+            position: spawnPosition);
         //}
         
 
@@ -88,12 +82,19 @@ public class ResourceNode : Interactable
     void HitFeedbackRpc()
     {
         // TODO Slice 8.3: play the authored hit sound on each observer.
+        AudioSource.PlayClipAtPoint(_audioClip, transform.position);
     }
 
     void HandleHealthChanged(int previousValue, int newValue)
     {
         // TODO Slice 8.4: make the visuals and physics match the health.
         // Next: Slice 8.5 in OnNetworkSpawn — subscribe and apply.
-        
+        bool isAlive = newValue > 0;
+
+        foreach (Renderer renderer in GetComponentsInChildren<Renderer>(includeInactive: true))
+            renderer.enabled = isAlive;
+
+        foreach (Collider collider in GetComponentsInChildren<Collider>(includeInactive: true))
+            collider.enabled = isAlive;
     }
 }

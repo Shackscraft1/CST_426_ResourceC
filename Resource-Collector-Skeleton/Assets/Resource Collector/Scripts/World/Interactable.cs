@@ -14,14 +14,16 @@ public abstract class Interactable : NetworkBehaviour
     public void ServerInteract(PlayerHeldItem heldItem)
     {
         if (!IsServer) return;
-        
+
         Debug.Log($"Requesting Interact for {heldItem.ObjectType}");
 
-        // TODO Slice 6.4: validate CanInteract before calling the subclass behavior.
+        // PROVIDED Slice 6.4:
+        // 1. Test if we can interact.
+        // 2. If so, call Interact.
+        // We implement ItemPickup's Interact next; ResourceNode and Receptacle come later.
         // Next: Slice 6.5 in ItemPickup.Interact.
-        
-        Interact(heldItem);
-        
+        if (CanInteract(heldItem.ObjectType))
+            Interact(heldItem);
     }
 
     protected abstract void Interact(PlayerHeldItem heldItem);
