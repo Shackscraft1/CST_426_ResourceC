@@ -1753,6 +1753,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rock 3
       objectReference: {fileID: 0}
+    - target: {fileID: 7834767415858953210, guid: 136ca24f38a89a04c8ab14bb71c67b7c, type: 3}
+      propertyPath: _startingHealth
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -34,6 +34,8 @@ public class PlayerHeldItem : NetworkBehaviour
         base.OnNetworkSpawn();
 
         // TODO Slice 6.9: subscribe to held-item changes and apply the current value.
+        _heldObjectType.OnValueChanged += HandleObjectTypeChanged;
+        HandleObjectTypeChanged(ObjectType.None, _heldObjectType.Value);
     }
 
     public override void OnNetworkPreDespawn()
@@ -41,12 +43,16 @@ public class PlayerHeldItem : NetworkBehaviour
         base.OnNetworkPreDespawn();
 
         // TODO Slice 7.3: on the server, drop the held item unless the host is shutting down. </> end of Slice 7
+        if(!IsServer) return;
+        if(!NetworkManager.ShutdownInProgress) DropHeldItem(transform.position);
+        
     }
 
     public override void OnNetworkDespawn()
     {
         // TODO Slice 6.10: unsubscribe from held-item changes. </> end of Slice 6
         base.OnNetworkDespawn();
+        _heldObjectType.OnValueChanged -= HandleObjectTypeChanged;
     }
 
     public void SetHeldItem(ObjectType objectType)
@@ -54,6 +60,9 @@ public class PlayerHeldItem : NetworkBehaviour
         if (!IsServer) return;
 
         // TODO Slice 6.6: store the authoritative held item.
+        
+        _heldObjectType.Value = objectType;
+        
     }
 
     public void Clear()
@@ -61,11 +70,12 @@ public class PlayerHeldItem : NetworkBehaviour
         if (!IsServer) return;
 
         // TODO Slice 6.7: clear the authoritative held item by storing ObjectType.None.
+        _heldObjectType.Value = ObjectType.None;
     }
 
     // Spawns the held item back into the world at the player's feet, then
     // empties the hand. Used for swap and for drop-on-disconnect.
-    public void SpawnHeldItemAsNewPickup(Vector3 position)
+    public void DropHeldItem(Vector3 position)
     {
         if (!IsServer) return;
 
@@ -73,10 +83,19 @@ public class PlayerHeldItem : NetworkBehaviour
         // catalog prefab, spawn it with NetworkObject.InstantiateAndSpawn, then
         // empty the hand.
         // Next: Slice 7.2 in ItemPickup.Interact.
+        
+        if(_heldObjectType.Value == ObjectType.None) return;
+        ItemCatalogEntry matchingEntry = _itemCatalog.Find((item) => item.type == _heldObjectType.Value);
+        NetworkObject.InstantiateAndSpawn(matchingEntry.prefab.gameObject, 
+            NetworkManager, position: position, rotation: transform.rotation * Quaternion.Euler(90f, 0f, 55f));
+        
+        Clear();
     }
 
     void HandleObjectTypeChanged(ObjectType previousValue, ObjectType newValue)
     {
         // TODO Slice 6.8: show only the held model matching newValue.
+        foreach (var item in _itemCatalog)
+            item.model.SetActive(item.type == newValue);
     }
 }

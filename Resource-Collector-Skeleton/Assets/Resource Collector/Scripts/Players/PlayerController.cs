@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -47,9 +48,13 @@ public class PlayerController : NetworkBehaviour
 
         UpdateInteractionTarget();
 
-        // TODO Slice 6.2: request interaction on E or left-click.
+        // PROVIDED Slice 6.1:
+        // 1. Detect E or left-click this frame.
+        // 2. Call HandleInteractionPressed.
         // Check: Play Mode, Host, highlight the axe, press E.
-        // The Interact clip plays. The axe stays on the ground.
+        // The Interact clip plays. The axe still stays on the ground.
+        if (Keyboard.current.eKey.wasPressedThisFrame || Mouse.current.leftButton.wasPressedThisFrame)
+            HandleInteractionPressed();
     }
 
     public override void OnNetworkSpawn()
@@ -77,9 +82,13 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        // TODO Slice 6.1: if there is no target, return. Otherwise fire the
-        // Animator's "Interact" trigger and send the target's NetworkObjectId
-        // to the server.
+        // PROVIDED Slice 6.2:
+        // 1. If there is no target, return.
+        // 2. Fire the Animator's "Interact" trigger.
+        // 3. Send the target's NetworkObjectId to the server.
+        if (_closestTarget == null) return;
+        _animator.SetTrigger("Interact");
+        RequestInteractRpc(_closestTarget.NetworkObjectId);
     }
 
     static Vector2 ReadMovementInput()
@@ -96,45 +105,42 @@ public class PlayerController : NetworkBehaviour
 
     void UpdateInteractionTarget()
     {
-        // TODO Slice 5.1: find the closest valid Interactable in front of the player.
+        // PROVIDED Slice 5.1: find the closest valid Interactable in front of the player.
         // When the target changes, clear the old highlight and select the new one.
-        Interactable interactable = FindClosestValidInteractable();
-        if (interactable == _closestTarget) return;
+        Interactable candidate = FindClosestValidInteractable();
+        if (candidate == _closestTarget) return;
 
         ClearSelection();
 
-        if (interactable != null)
+        if (candidate != null)
         {
-            _closestTarget = interactable;
-            _closestTarget.GetComponent<Highlightable>().SetHighlighted(true);
+            candidate.GetComponent<Highlightable>().SetHighlighted(true);
+            _closestTarget = candidate;
         }
     }
 
     Interactable FindClosestValidInteractable()
     {
-        Collider[] candidates = Physics.OverlapSphere(transform.position, _detectionRadius, _pickupLayer);
-        Interactable closestInteractable = null;
-        float closestDistanceSqr = float.MaxValue;
+        Collider[] hits = Physics.OverlapSphere(transform.position, _detectionRadius, _pickupLayer);
+        float closestDistance = float.MaxValue;
+        Interactable candidate = null;
 
-        foreach (Collider c in candidates)
+        foreach (Collider hit in hits)
         {
-            if (!c.TryGetComponent(out Interactable interactable)) continue;
-            if (!interactable.CanInteract(_heldItem.ObjectType)) continue;
+            if (!hit.TryGetComponent(out Interactable target)) continue;
+            if (!target.CanInteract(_heldItem.ObjectType)) continue;
 
-            Vector3 directionToInteractable = interactable.transform.position - transform.position;
+            Vector3 directionToTarget = (hit.transform.position - transform.position).normalized;
+            if (Vector3.Angle(transform.forward, directionToTarget) > _detectionAngle) continue;
 
-            float angle = Vector3.Angle(transform.forward, directionToInteractable.normalized);
-            if (angle > _detectionAngle) continue;
+            float distance = Vector3.Distance(transform.position, hit.transform.position);
+            if (distance > closestDistance) continue;
 
-            float distanceSqr = directionToInteractable.sqrMagnitude;
-            if (distanceSqr < closestDistanceSqr)
-            {
-                closestInteractable = interactable;
-                closestDistanceSqr = distanceSqr;
-            }
+            closestDistance = distance;
+            candidate = target;
         }
 
-        return closestInteractable;
+        return candidate;
     }
 
     void ClearSelection()
@@ -148,9 +154,24 @@ public class PlayerController : NetworkBehaviour
     [Rpc(SendTo.Server)]
     void RequestInteractRpc(ulong networkObjectId)
     {
-        // TODO Slice 6.3: look up networkObjectId in SpawnedObjects. If that
-        // object is gone, return. It may have despawned after you selected it.
-        // If it has an Interactable, call ServerInteract(_heldItem).
+        // PROVIDED Slice 6.3:
+        // 1. Look up networkObjectId in SpawnedObjects.
+        // 2. If that object is gone, return. It may have despawned after you selected it.
+        // 3. If it has an Interactable, call ServerInteract(_heldItem).
+        Dictionary<ulong, NetworkObject> spawnedObjectMap = NetworkManager.SpawnManager.SpawnedObjects;
+        if (!spawnedObjectMap.TryGetValue(networkObjectId, out NetworkObject spawnedObject))
+        {
+            Debug.LogError($"Couldn't find id: {networkObjectId}");
+            return;
+        }
+
+        if (!spawnedObject.TryGetComponent(out Interactable interactable))
+        {
+            Debug.LogError("Object doesn't have interactable");
+            return;
+        }
+
+        interactable.ServerInteract(_heldItem);
 
         // Check: E still only plays Interact. Console stays clean. The pickup
         // (e.g. axe) does not move yet.
