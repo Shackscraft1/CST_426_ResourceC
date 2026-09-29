@@ -11,6 +11,11 @@ public class AnimationEvents : MonoBehaviour
 {
     public UnityEvent OnStep;
 
+    public void ThrowAction()
+    {
+        GetComponentInParent<PlayerController>().LaunchAxe();
+    }
+
     public void ChopAction() { }
 
     public void AnimationDone() { }

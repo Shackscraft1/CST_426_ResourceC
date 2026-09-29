@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,6 +13,8 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : NetworkBehaviour
 {
+    static readonly int ThrowHash = Animator.StringToHash("Throw");
+
     [Header("Components")]
     [SerializeField] CharacterController _characterController;
     [SerializeField] Animator _animator;
@@ -39,6 +42,7 @@ public class PlayerController : NetworkBehaviour
     Vector2 _smoothedInput;
     ThrownAxe _axe;
     LineRenderer _lineRenderer;
+    NetworkAnimator _networkAnimator;
     bool _axeThrowRequested;
     Coroutine _returnRoutine;
 
@@ -71,6 +75,7 @@ public class PlayerController : NetworkBehaviour
         }
 
         _axe.Initialize(this, _characterController);
+        _networkAnimator = _animator.GetComponent<NetworkAnimator>();
         SetupLineRenderer();
     }
 
@@ -226,16 +231,17 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        if (_axeThrowRequested)
-        {
-            _axeThrowRequested = false;
-            ReleaseAxeRpc();
-            return;
-        }
-
         if (_closestTarget == null) return;
 
         RequestInteractRpc(_closestTarget.NetworkObjectId);
+    }
+
+    public void LaunchAxe()
+    {
+        if (!IsOwner || !_axeThrowRequested) return;
+
+        _axeThrowRequested = false;
+        ReleaseAxeRpc();
     }
 
     void ClearSelection()
@@ -254,7 +260,7 @@ public class PlayerController : NetworkBehaviour
             InputSystem.actions.FindAction("Player/Attack").WasPressedThisFrame())
         {
             _axeThrowRequested = true;
-            _animator.SetTrigger("Interact");
+            _networkAnimator.SetTrigger(ThrowHash);
             PrepareAxeThrowRpc();
             return true;
         }

@@ -505,6 +505,10 @@ MonoBehaviour:
     m_Bits: 64
   _movementSpeed: 4
   _rotationSpeed: 360
+  _throwImpulse: 25
+  _returnDuration: 1
+  _bowAmount: 2.5
+  _aimDistance: 20
 --- !u!114 &330018501001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1894,6 +1898,10 @@ MonoBehaviour:
       ParameterType: 9
     - name: Chop
       NameHash: 1547809795
+      Synchronize: 1
+      ParameterType: 9
+    - name: Throw
+      NameHash: -1907200461
       Synchronize: 1
       ParameterType: 9
   AnimatorParametersExpanded: 0
