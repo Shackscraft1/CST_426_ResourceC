@@ -65,6 +65,12 @@ public class PlayerHeldItem : NetworkBehaviour
         
     }
 
+    public GameObject GetHeldModel(ObjectType objectType)
+    {
+        ItemCatalogEntry matchingEntry = _itemCatalog.Find((item) => item.type == objectType);
+        return matchingEntry.model;
+    }
+
     public void Clear()
     {
         if (!IsServer) return;

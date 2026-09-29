@@ -63,6 +63,20 @@ public class ResourceNode : Interactable
         // 4. Place each with a small random XZ offset and random yaw.
         // Check: axe the tree. Wood appears. The mesh is still there until 8.4.
         // Next: Slice 8.4 HandleHealthChanged.
+        ApplyHit();
+    }
+
+    public bool ServerHitByThrownAxe()
+    {
+        if (!IsServer) return false;
+        if (!CanInteract(ObjectType.Axe)) return false;
+
+        ApplyHit();
+        return _health.Value <= 0;
+    }
+
+    void ApplyHit()
+    {
         _health.Value -= 1;
         HitFeedbackRpc();
         //add for to these lines in cases you want to spawn 3 for each interaction
@@ -76,11 +90,6 @@ public class ResourceNode : Interactable
                     position: spawnPosition);
             }
         }
-
-        
-        
-
-
     }
 
     [Rpc(SendTo.ClientsAndHost)]
